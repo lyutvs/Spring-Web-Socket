@@ -1,2 +1,8 @@
-package com.example.chatservice.model;public class MessageStatus {
+package com.example.chatservice.model;
+
+public enum MessageStatus {
+
+    RECEIVED, DELIVERED
+
+
 }
