@@ -11,12 +11,14 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
 public class ChatMessageService {
 
     @Autowired private ChatMessageRepository repository;
+    @Autowired private ChatRoomService chatRoomService;
     @Autowired private MongoOperations mongoOperations;
 
     public ChatMessage save(ChatMessage chatMessage) {
@@ -25,9 +27,22 @@ public class ChatMessageService {
         return chatMessage;
     }
 
-    public long findChatMessages(String senderId, String recipientId) {
+    public long countNewMessages(String senderId, String recipientId) {
         return repository.countBySenderIdAndRecipientIdAndStatus(
                 senderId, recipientId, MessageStatus.RECEIVED);
+    }
+
+    public List<ChatMessage> findChatMessages(String senderId, String recipientId) {
+        var chatId = chatRoomService.getChatId(senderId, recipientId, false);
+
+        var messages =
+                chatId.map(cId -> repository.findByChatId(cId)).orElse(new ArrayList<>());
+
+        if(messages.size() > 0) {
+            updateStatuses(senderId, recipientId, MessageStatus.DELIVERED);
+        }
+
+        return messages;
     }
 
     public ChatMessage findById(String id) {
@@ -49,6 +64,5 @@ public class ChatMessageService {
         Update update = Update.update("status", status);
         mongoOperations.updateMulti(query, update, ChatMessage.class);
     }
-
-
+    
 }
